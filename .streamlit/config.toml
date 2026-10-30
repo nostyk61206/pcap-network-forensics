@@ -1,0 +1,14 @@
+[theme]
+base="dark"
+primaryColor="#f63366"
+backgroundColor="#0e1117"
+secondaryBackgroundColor="#262730"
+textColor="#fafafa"
+font="monospace"
+
+[server]
+maxUploadSize = 200
+
+[layout]
+# Note: Streamlit's wide layout is typically configured in the app using st.set_page_config()
+# but we can set the default theme here.

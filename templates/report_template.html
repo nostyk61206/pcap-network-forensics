@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Báo Cáo Phân Tích An Ninh Mạng PCAP</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 30px 40px;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0284c7;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            color: #0f172a;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+
+        .meta-info {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        h2 {
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-top: 25px;
+            font-size: 17px;
+        }
+
+        h3 {
+            color: #334155;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 14.5px;
+        }
+
+        .metric-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .metric-box {
+            flex: 1;
+            padding: 12px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-title {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0284c7;
+            margin-top: 5px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 12.5px;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #cbd5e1;
+            padding: 7px 10px;
+            text-align: left;
+        }
+
+        .table th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .chart-container {
+            text-align: center;
+            margin-top: 25px;
+            page-break-inside: avoid;
+        }
+
+        .chart {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🛡️ Báo Cáo Phân Tích PCAP</h1>
+        <div class="meta-info">
+            <strong>Tệp PCAP:</strong> {{ filename }} | 
+            <strong>IP Máy Chủ Mục Tiêu:</strong> {{ server_ip }} | 
+            <strong>Thời Điểm Xuất Báo Cáo:</strong> {{ report_date }}
+        </div>
+    </div>
+
+    <h2>1. Tổng Quan Giám Sát</h2>
+    <div class="metric-container">
+        <div class="metric-box">
+            <div class="metric-title">Tổng Gói Tin</div>
+            <div class="metric-value">{{ total_packets }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">Quét Cổng</div>
+            <div class="metric-value" style="color: #ea580c;">{{ port_scan_count }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">Tấn Công Web</div>
+            <div class="metric-value" style="color: #dc2626;">{{ web_attack_count }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">Flood / DoS</div>
+            <div class="metric-value" style="color: #b91c1c;">{{ dos_count }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">DNS Inbound Probes</div>
+            <div class="metric-value" style="color: #0284c7;">{{ dns_inbound_count }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">DNS Tunneling</div>
+            <div class="metric-value" style="color: #2563eb;">{{ dns_tunneling_count }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">IP Bên Ngoài</div>
+            <div class="metric-value" style="color: #0d9488;">{{ external_ip_count }}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-title">IP Đáng Ngờ</div>
+            <div class="metric-value" style="color: #e11d48;">{{ suspicious_external_count }}</div>
+        </div>
+    </div>
+
+    <h2>2. Phân Tích Chi Tiết</h2>
+
+    {% if port_scans_html %}
+    <h3>2.1. Quét Cổng (Port Scan)</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Đã lọc cờ TCP SYN, loại trừ phản hồi RST/ACK của máy chủ để chống báo động giả)</p>
+    {{ port_scans_html | safe }}
+    {% endif %}
+
+    {% if web_attacks_html %}
+    <h3>2.2. Tấn Công Web (Web Attack)</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Dò quét tệp nhạy cảm .env, .git, mã độc RCE, đọc trộm tệp Path Traversal, SQLi và công cụ quét tự động)</p>
+    {{ web_attacks_html | safe }}
+    {% endif %}
+
+    {% if dos_html %}
+    <h3>2.3. Tấn Công Flood & DoS / Connection Attempts</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Ghi nhận các đợt bùng nổ lưu lượng dồn dập và các kết nối lặp lại nhiều lần vào dịch vụ)</p>
+    {{ dos_html | safe }}
+    {% endif %}
+
+    {% if tls_html %}
+    <h3>2.4. Phân Tích TLS SNI</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Trích xuất Server Name Indication từ các gói tin bắt tay TLS nhằm phát hiện kết nối C2 và tên miền độc hại)</p>
+    {{ tls_html | safe }}
+    {% endif %}
+
+    {% if dns_probes_html %}
+    <h3>2.5. Thăm Dò DNS (DNS Probes)</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Gói tin Inbound kiểm tra cổng 53 của máy chủ giám sát và thăm dò open resolver)</p>
+    {{ dns_probes_html | safe }}
+    {% endif %}
+
+    {% if dns_tunneling_html %}
+    <h3>2.6. Kênh Ngầm DNS (DNS Tunneling)</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Truy vấn tên miền bất thường có độ dài lớn hoặc entropy cao nghi vấn tuồn dữ liệu hoặc C2)</p>
+    {{ dns_tunneling_html | safe }}
+    {% endif %}
+
+    <h3>2.7. Kết Nối Đến IP Lạ & IP Bên Ngoài (External Connections)</h3>
+    <p style="font-size: 12.5px; color: #64748b;">(Thống kê lưu lượng trao đổi giữa mạng nội bộ và các địa chỉ IP public bên ngoài, phân loại mức độ rủi ro và trạng thái kiểm chứng minh bạch)</p>
+    {% if has_external_connections and external_connections_html %}
+    {{ external_connections_html | safe }}
+    {% else %}
+    <p style="font-size: 13px; color: #15803d; background-color: #f0fdf4; padding: 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
+        Không phát hiện kết nối đến IP public bên ngoài trong tệp PCAP.
+    </p>
+    {% endif %}
+
+    {% if top_threat_ips_html %}
+    <h2>3. Top IP Đe Dọa</h2>
+    <p style="font-size: 12.5px; color: #64748b;">Thống kê chi tiết các nguồn phát động hành vi đe dọa với tần suất cao nhất:</p>
+    {{ top_threat_ips_html | safe }}
+    {% endif %}
+
+    <h2>4. Biểu Đồ Trực Quan</h2>
+
+    {% if chart_external %}
+    <div class="chart-container">
+        <h3>Top Kết Nối IP Bên Ngoài</h3>
+        <img src="{{ chart_external }}" class="chart" alt="Top kết nối IP bên ngoài">
+    </div>
+    {% endif %}
+
+    {% if chart_protocol %}
+    <div class="chart-container">
+        <h3>Giao Thức Mạng</h3>
+        <img src="{{ chart_protocol }}" class="chart" alt="Phân bổ giao thức">
+    </div>
+    {% endif %}
+
+    {% if chart_web_attacks %}
+    <div class="chart-container">
+        <h3>Danh Mục Tấn Công Web</h3>
+        <img src="{{ chart_web_attacks }}" class="chart" alt="Danh mục tấn công web">
+    </div>
+    {% endif %}
+
+    {% if chart_dos %}
+    <div class="chart-container">
+        <h3>Tấn Công Flood & DoS</h3>
+        <img src="{{ chart_dos }}" class="chart" alt="Tấn công Flood / DoS">
+    </div>
+    {% endif %}
+
+    {% if chart_time %}
+    <div class="chart-container">
+        <h3>Lưu Lượng Theo Thời Gian</h3>
+        <img src="{{ chart_time }}" class="chart" alt="Lưu lượng theo thời gian">
+    </div>
+    {% endif %}
+
+</body>
+
+</html>
